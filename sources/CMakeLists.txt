@@ -14,6 +14,8 @@ include_directories(${PCAP_INCLUDE_DIRS})
 # Specify the source files
 set(SOURCE_FILES main.cpp)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
 # Create the executable
 add_executable(SnifferCLI ${SOURCE_FILES})
 
