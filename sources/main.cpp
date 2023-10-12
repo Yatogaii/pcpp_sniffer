@@ -22,32 +22,29 @@ void packetHandleThread(pcap_t *handle) {
   pcap_loop(handle, 100, packetHandler, nullptr);
 }
 
-std::unique_ptr<pcap_t> initSniffer(std::string ifname) {
-  return nullptr;
+pcap_t* initSniffer(std::string ifname) {
+  char errbuf[PCAP_ERRBUF_SIZE];
+
+  pcap_t* handle = pcap_open_live(ifname.c_str(), BUFSIZ, 1, 1000, errbuf);
+  if (handle == nullptr) {
+    std::cerr << "pcap_open_live() failed: " << errbuf << std::endl;
+    return nullptr;
+  }
+  return handle;
 }
 
 int main() {
-  char errbuf[PCAP_ERRBUF_SIZE];
-  pcap_t *handle;
+  // 通过传入网卡名称初始化 sniffer ，如果初始化失败以非0值退出
+  pcap_t* handle  = initSniffer("eth0");
 
-  handle = pcap_open_live("eth0", BUFSIZ, 1, 1000, errbuf);
-  if (handle == nullptr) {
-    std::cerr << "pcap_open_live() failed: " << errbuf << std::endl;
-    return 1;
-  }
-
+  // 开启数据包处理线程
   std::thread captureThread(packetHandleThread, handle);
 
 
-
-  // 在此处，主线程可以执行其他任务
-  // ...
-
-  // 等待捕获线程结束
+  // 等待线程结束
   captureThread.join();
 
   pcap_close(handle);
-
   printf("done!\n");
 
   return 0;
