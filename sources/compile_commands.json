@@ -1,0 +1,16 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/x86_64-linux-gnu-g++-10",
+      "-pthread",
+      "-std=gnu++14",
+      "-o",
+      "CMakeFiles/SnifferCLI.dir/main.cpp.o",
+      "-c",
+      "/root/AtkDefBase-Lab1/sources/main.cpp"
+    ],
+    "directory": "/root/AtkDefBase-Lab1/sources/build",
+    "file": "/root/AtkDefBase-Lab1/sources/main.cpp",
+    "output": "/root/AtkDefBase-Lab1/sources/build/CMakeFiles/SnifferCLI.dir/main.cpp.o"
+  }
+]

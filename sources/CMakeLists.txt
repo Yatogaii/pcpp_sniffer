@@ -3,22 +3,19 @@ project(SnifferCLI)
 
 # Specify the required C++ standard
 set(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
-# Find required packages
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(PCAP REQUIRED libpcap)
+# Set VCPKG
+set(CMAKE_TOOLCHAIN_FILE /root/vcpkg/scripts/buildsystems/vcpkg.cmake)
 
-# Include the libpcap headers
-include_directories(${PCAP_INCLUDE_DIRS})
+# Find pcapplusplus package
+find_package(unofficial-pcapplusplus CONFIG REQUIRED)
 
 # Specify the source files
 set(SOURCE_FILES main.cpp)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-
 # Create the executable
 add_executable(SnifferCLI ${SOURCE_FILES})
 
-# Link the executable to the necessary libraries
-target_link_libraries(SnifferCLI ${PCAP_LIBRARIES})
-
+# Link pcapplusplus and other libraries to your project
+target_link_libraries(SnifferCLI PRIVATE unofficial::pcapplusplus::pcappp unofficial::pcapplusplus::commonpp unofficial::pcapplusplus::packetpp)

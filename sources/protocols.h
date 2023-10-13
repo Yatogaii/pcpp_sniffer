@@ -1,8 +1,14 @@
 //  COPY FROM : https://www.tcpdump.org/pcap.html
 
+#ifndef _PROTOCOLS_H_
+#define _PROTOCOLS_H_
+
+#include <sys/types.h>
+#include <pcap.h>
+
 
 /* Ethernet addresses are 6 bytes */
-#define ETHER_ADDR_LEN	6
+#define ETHER_ADDR_LEN 6
 
 /* Ethernet header */
 struct sniff_ethernet {
@@ -54,3 +60,5 @@ struct sniff_tcp {
 	u_short th_sum;		/* checksum */
 	u_short th_urp;		/* urgent pointer */
 };
+
+#endif
