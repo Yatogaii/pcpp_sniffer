@@ -1,26 +1,19 @@
 #include <iostream>
 #include <IPv4Layer.h>
-#include <IPv6Layer.h>
 #include <TcpLayer.h>
 #include <UdpLayer.h>
 #include <DnsLayer.h>
 #include <PcapFileDevice.h>
 #include <Packet.h>
 #include <PcapLiveDeviceList.h>
-#include <ProtocolType.h>
-#include "packets.h"
 #include <HttpLayer.h>
+#include <ProtocolType.h>
 
-/// 数据包处理函数
 void printPacketInfo(const pcpp::Packet& packet) {
     pcpp::IPv4Layer* ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
-    pcpp::IPv6Layer* ipv6Layer = packet.getLayerOfType<pcpp::IPv6Layer>();
     pcpp::TcpLayer* tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
     pcpp::UdpLayer* udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
     pcpp::DnsLayer* dnsLayer = packet.getLayerOfType<pcpp::DnsLayer>();
-    pcpp::HttpRequestLayer httReqLayer = packet.getLayerOfType<pcpp::HttpRequestLayer>() ;
-    pcpp::HttpResponseLayer httRspLayer = packet.getLayerOfType<pcpp::HttpResponseLayer>() ;
-
 
     // Print basic IP/TCP/UDP information
     if (ipLayer != nullptr) {
