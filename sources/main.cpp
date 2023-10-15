@@ -10,6 +10,7 @@
 #include <PcapLiveDeviceList.h>
 #include <ProtocolType.h>
 #include "packets.h"
+#include "sockets.h"
 #include <HttpLayer.h>
 #include <ostream>
 #include <vector>
@@ -53,7 +54,19 @@ std::vector<pcpp::PcapLiveDevice*> getLiveDevices(){
 
 int main() {
     // Step0: 初始化Socket，与前端通过socket通信
-
+    Socket serverSocket;
+    if (!serverSocket.Create()) {
+        std::cerr << "Error creating server socket." << std::endl;
+        return 1;
+    }
+    if (!serverSocket.Bind("127.0.0.1", 28080)) {
+        std::cerr << "Error binding to address." << std::endl;
+        return 1;
+    }
+    if (!serverSocket.Listen()) {
+        std::cerr << "Error listening for connections." << std::endl;
+        return 1;
+    }
 
     // Step1: 获取网卡设备列表
     std::vector<pcpp::PcapLiveDevice*> devLists = getLiveDevices();
