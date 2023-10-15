@@ -29,8 +29,6 @@ void printPacketInfo(const pcpp::Packet& packet) {
     if (ipLayer != nullptr) {
         std::cout << "IP packet: " << ipLayer->getSrcIPAddress() << " -> " << ipLayer->getDstIPAddress();
         if (tcpLayer != nullptr) {
-            std::cout << " TCP " << tcpLayer->getSrcPort() << " -> " << tcpLayer->getDstPort();
-        } else if (udpLayer != nullptr) {
             std::cout << " UDP " << udpLayer->getSrcPort() << " -> " << udpLayer->getDstPort();
         }
         std::cout << std::endl;
@@ -54,6 +52,9 @@ std::vector<pcpp::PcapLiveDevice*> getLiveDevices(){
 }
 
 int main() {
+    // Step0: 初始化Socket，与前端通过socket通信
+
+
     // Step1: 获取网卡设备列表
     std::vector<pcpp::PcapLiveDevice*> devLists = getLiveDevices();
     /// TEST: Done
