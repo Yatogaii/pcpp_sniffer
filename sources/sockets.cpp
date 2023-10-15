@@ -54,6 +54,11 @@ bool Socket::Send(const std::string& data) {
     return bytesSent != -1;
 }
 
+bool Socket::Send(const DataPack& packet) {
+    ssize_t bytesSent = send(m_socket, packet.data(), packet.size(), 0);
+    return bytesSent != -1;
+}
+
 bool Socket::Receive(std::string& data) {
     char buffer[1024];
     ssize_t bytesRead = recv(m_socket, buffer, sizeof(buffer), 0);

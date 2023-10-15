@@ -54,6 +54,8 @@ std::vector<pcpp::PcapLiveDevice*> getLiveDevices(){
 
 int main() {
     // Step0: 初始化Socket，与前端通过socket通信
+    // 基本流程：
+    //   监听-收到连接-发送网卡列表-选择网卡-开始抓包
     Socket serverSocket;
     if (!serverSocket.Create()) {
         std::cerr << "Error creating server socket." << std::endl;

@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include "packets.h"
+
 class Socket {
 public:
     Socket();
@@ -20,6 +22,7 @@ public:
     bool Accept(Socket& newSocket);
     bool Connect(const std::string& address, int port);
     bool Send(const std::string& data);
+    bool Send(const DataPack& data);
     bool Receive(std::string& data);
     void Close();
 
