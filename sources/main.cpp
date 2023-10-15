@@ -1,3 +1,4 @@
+#include <PcapLiveDevice.h>
 #include <iostream>
 #include <IPv4Layer.h>
 #include <IPv6Layer.h>
@@ -10,6 +11,8 @@
 #include <ProtocolType.h>
 #include "packets.h"
 #include <HttpLayer.h>
+#include <ostream>
+#include <vector>
 
 /// 数据包处理函数
 void printPacketInfo(const pcpp::Packet& packet) {
@@ -18,8 +21,8 @@ void printPacketInfo(const pcpp::Packet& packet) {
     pcpp::TcpLayer* tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
     pcpp::UdpLayer* udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
     pcpp::DnsLayer* dnsLayer = packet.getLayerOfType<pcpp::DnsLayer>();
-    pcpp::HttpRequestLayer httReqLayer = packet.getLayerOfType<pcpp::HttpRequestLayer>() ;
-    pcpp::HttpResponseLayer httRspLayer = packet.getLayerOfType<pcpp::HttpResponseLayer>() ;
+    pcpp::HttpRequestLayer* httReqLayer = packet.getLayerOfType<pcpp::HttpRequestLayer>() ;
+    pcpp::HttpResponseLayer* httRspLayer = packet.getLayerOfType<pcpp::HttpResponseLayer>() ;
 
 
     // Print basic IP/TCP/UDP information
@@ -44,10 +47,29 @@ void onPacketArrives(pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, void* c
     printPacketInfo(parsedPacket);
 }
 
+/// 获得当前设备的所有网卡，返回给主程序
+/// 获得的网卡经过用户选择后再确定具体抓包流量来自哪一个网卡
+std::vector<pcpp::PcapLiveDevice*> getLiveDevices(){
+    return pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDevicesList();
+}
+
 int main() {
+    // Step1: 获取网卡设备列表
+    std::vector<pcpp::PcapLiveDevice*> devLists = getLiveDevices();
+    /// TEST: Done
+    ///for (auto each : devLists) {
+    ///    std::cout << each->getName() << std::endl
+    ///}
+    ///return 0;
+
+
+    // Step2: 选择设备
+    // TODO
+
+    // Step3: 开个子线程开始抓包，主线程接受进一步的消息
     pcpp::PcapLiveDevice* dev = pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByIp("172.24.27.33");
     if (!dev) {
-        std::cerr << "Cannot find default device!" << std::endl;
+        std::cerr << "Cannot find specific device!" << std::endl;
         return 1;
     }
 
@@ -58,8 +80,11 @@ int main() {
 
     dev->startCapture(onPacketArrives, nullptr);
 
+    // Step4: 主线程接受进一步的消息，阻塞
     getchar();
 
+    // Step5: 退出程序，或者重置状态后等待下一次抓包
+    // TODO
     dev->stopCapture();
     dev->close();
 
