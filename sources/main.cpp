@@ -69,6 +69,10 @@ int main() {
         std::cerr << "Error listening for connections." << std::endl;
         return 1;
     }
+    Socket clientSocket;
+    if (!serverSocket.Accept(clientSocket)) {
+        //TODO
+    }
 
     // Step1: 获取网卡设备列表
     std::vector<pcpp::PcapLiveDevice*> devLists = getLiveDevices();
@@ -80,9 +84,26 @@ int main() {
 
 
     // Step2: 选择设备
-    // TODO
+    // Step1: 拼接列表字符串
+    std::vector<char> devDatas;
+    for(auto each : devLists){
+        each.push_back(each->getName());
+        each.push_back("!@#");
+    }
+    // Step2.2: 发送给前端供用户选择
+    clientSocket.Send(DataPack(devDatas));
+
+    // Step2.3: 接受前端返回的数据
+    std::string recvData;
+    clientSocket.Receive(recvData);
+    // 判断数据是否合理
+    // TODO 可能需要对recvDatas 进行提取
+    if(std::find(devDatas.begin(),devDatas.end(),recvData)==devDatas.end()){
+        // TODO 接受到的数据不在网卡列表里，错误处理
+    }
 
     // Step3: 开个子线程开始抓包，主线程接受进一步的消息
+    // pcpp::PcapLiveDevice* dev = pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByName(recvData.c_str());
     pcpp::PcapLiveDevice* dev = pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByIp("172.24.27.33");
     if (!dev) {
         std::cerr << "Cannot find specific device!" << std::endl;
