@@ -1,5 +1,3 @@
-//  COPY FROM : https://www.tcpdump.org/pcap.html
-
 #ifndef _PROTOCOLS_H_
 #define _PROTOCOLS_H_
 
@@ -15,6 +13,14 @@
 #include <HttpLayer.h>
 #include <ostream>
 #include <vector>
+#include <string>
+
+struct LayerInfo {
+    std::string protocolName;
+	// 存放每个协议的特定字段
+    std::map<std::string, std::string> fields;
+};
+
 
 std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& packet);
 void parseLayer(pcpp::Layer* layer, std::vector<LayerInfo>& layersInfo);

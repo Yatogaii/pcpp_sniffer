@@ -4,9 +4,7 @@
 
 const size_t DataPack::HEADER_SIZE;
 
-DataPack::DataPack() = default;
-
-DataPack::DataPack(const std::string& data) {
+DataPack::DataPack(const std::string& data, int dataType) : dataType(dataType) {
     size_t totalSize = HEADER_SIZE + data.size();
     buffer.resize(totalSize);
 
@@ -15,7 +13,7 @@ DataPack::DataPack(const std::string& data) {
     std::memcpy(buffer.data() + HEADER_SIZE, data.data(), data.size());
 }
 
-DataPack::DataPack(const std::vector<std::string>& dataList) {
+DataPack::DataPack(const std::vector<std::string>& dataList, int dataType) : dataType(dataType) {
     size_t totalSize = 0;
     for (const auto& data : dataList) {
         totalSize += HEADER_SIZE + data.size();

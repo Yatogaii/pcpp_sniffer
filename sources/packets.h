@@ -7,13 +7,17 @@
 
 class DataPack {
 private:
-    static const size_t HEADER_SIZE = sizeof(int);  // 4 bytes for data length
+    // Soket包头长度固定为2个int, 一个int是数据包类型，另一个int是数据包长度
+    static const size_t HEADER_SIZE = sizeof(int) * 2;
+    const int dataType;
     std::vector<char> buffer;
 
 public:
-    DataPack();
-    DataPack(const std::string& data);
-    DataPack(const std::vector<std::string>& data);
+    static const int kDataTypeDevList = 0;
+    static const int kDataTypeLayerInfos = 1;
+    DataPack():dataType(0){};
+    DataPack(const std::string& data, int);
+    DataPack(const std::vector<std::string>& data, int);
 
     const char* data() const;
     size_t size() const;

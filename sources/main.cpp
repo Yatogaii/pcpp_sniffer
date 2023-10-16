@@ -1,94 +1,13 @@
 #include <PcapLiveDevice.h>
 #include <iostream>
-#include <IPv4Layer.h>
-#include <IPv6Layer.h>
-#include <TcpLayer.h>
-#include <UdpLayer.h>
-#include <DnsLayer.h>
-#include <PcapFileDevice.h>
-#include <Packet.h>
-#include <PcapLiveDeviceList.h>
-#include <ProtocolType.h>
-#include "packets.h"
-#include "sockets.h"
-#include <HttpLayer.h>
 #include <ostream>
 #include <vector>
 
+#include "packets.h"
+#include "sockets.h"
+#include "protocols.h"
 
-/// 从下至上的获取一个 Packet 的协议栈
-/// eg. Ethernet->IPv4->Tcp->Http
-std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& packet) {
-    std::vector<pcpp::ProtocolType> protocols;
-
-    pcpp::Layer* currLayer = packet.getFirstLayer();
-    while (currLayer != nullptr) {
-        protocols.push_back(currLayer->getProtocol());
-        currLayer = currLayer->getNextLayer();
-    }
-
-    return protocols;
-}
-
-/// parseLayer 函数，处理传入的数据包
-/// 根据协议栈来拼接 map<string,string> 类型的数据
-/// TODO 需要确定各个协议都需要存入什么类型的数据
-void parseLayer(pcpp::Layer* layer, std::vector<LayerInfo>& layersInfo) {
-    while (layer) {
-        LayerInfo currLayerInfo;
-        currLayerInfo.protocolName = layer->getProtocolName();
-
-        switch (layer->getProtocol()) {
-            case pcpp::Ethernet:
-                // 处理Ethernet层字段
-                break;
-            case pcpp::IPv4:
-            case pcpp::IPv6:
-                {
-                    auto ipLayer = dynamic_cast<pcpp::IPLayer*>(layer);
-                    currLayerInfo.fields["Source IP"] = ipLayer->getSrcIPAddress().toString();
-                    currLayerInfo.fields["Destination IP"] = ipLayer->getDstIPAddress().toString();
-                }
-                break;
-            case pcpp::ARP:
-                // 处理ARP层字段
-                break;
-            case pcpp::ICMP:
-                // 处理ICMP层字段
-                break;
-            case pcpp::TCP:
-                {
-                    auto tcpLayer = dynamic_cast<pcpp::TcpLayer*>(layer);
-                    currLayerInfo.fields["Source Port"] = std::to_string(tcpLayer->getTcpHeader()->portSrc);
-                    currLayerInfo.fields["Destination Port"] = std::to_string(tcpLayer->getTcpHeader()->portDst);
-                }
-                break;
-            case pcpp::UDP:
-                {
-                    auto udpLayer = dynamic_cast<pcpp::UdpLayer*>(layer);
-                    currLayerInfo.fields["Source Port"] = std::to_string(udpLayer->getUdpHeader()->portSrc);
-                    currLayerInfo.fields["Destination Port"] = std::to_string(udpLayer->getUdpHeader()->portDst);
-                }
-                break;
-            case pcpp::HTTP:
-                {
-                    auto httpLayer = dynamic_cast<pcpp::HttpLayer*>(layer);
-                    currLayerInfo.fields["HTTP Method"] = httpLayer->getFirstLine()->getMethod();
-                    currLayerInfo.fields["HTTP URI"] = httpLayer->getFirstLine()->getUri();
-                }
-                break;
-            // ... 处理其他应用层协议
-        }
-
-        layersInfo.push_back(currLayerInfo);
-
-        // Move to the next layer
-        layer = layer->getNextLayer();
-    }
-}
-
-
-/// 数据包处理函数
+/// 数据包处理示例函数
 void printPacketInfo(const pcpp::Packet& packet) {
     // Step1: 获取 Packet 的协议栈
     std::vector<pcpp::ProtocolType> protocols = getProtocolStackFromTop(packet);
@@ -116,9 +35,25 @@ void printPacketInfo(const pcpp::Packet& packet) {
     }
 }
 
+/// 数据包处理函数
 void onPacketArrives(pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, void* cookie) {
+    // Step0: 把 Raw 解析成 Packet
     pcpp::Packet parsedPacket(packet);
-    printPacketInfo(parsedPacket);
+
+    // TODO 是否需要同步队列进行多线程处理？
+
+    // Step1: 获取 Packet 的协议栈
+    std::vector<pcpp::ProtocolType> protocols = getProtocolStackFromTop(packet);
+
+    // Step2: 处理所有协议，每个协议都读取相关的信息
+    // TODO 这一步到底需要存放哪些信息不好确定
+    // printPacketInfo(parsedPacket);
+    std::vector<LayerInfo> packetLayerInfos;
+    parseLayer(parsedPacket.getFirstLayer(), packetLayerInfos);
+
+    // Step3: 把处理到的数据包发给前端进行解析
+    // 需要确定数据包拼接的形式
+    
 }
 
 /// 获得当前设备的所有网卡，返回给主程序
@@ -166,7 +101,7 @@ int main() {
         devDatas.push_back("!@#");
     }
     // Step2.2: 发送给前端供用户选择
-    clientSocket.Send(DataPack(devDatas));
+    clientSocket.Send(DataPack(devDatas, DataPack::kDataTypeDevList));
 
     // Step2.3: 接受前端返回的数据
     std::string recvData;

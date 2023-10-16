@@ -20,11 +20,12 @@ std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& pack
 void parseLayer(pcpp::Layer* layer, std::vector<LayerInfo>& layersInfo) {
     while (layer) {
         LayerInfo currLayerInfo;
-        currLayerInfo.protocolName = layer->getProtocolName();
+        // TODO 需要获取协议名称
+        // currLayerInfo.protocolName = layer->getProtocolName();
+        currLayerInfo.protocolName = "protos";
 
         switch (layer->getProtocol()) {
             case pcpp::Ethernet:
-                // 处理Ethernet层字段
                 break;
             case pcpp::IPv4:
             case pcpp::IPv6:
@@ -35,10 +36,8 @@ void parseLayer(pcpp::Layer* layer, std::vector<LayerInfo>& layersInfo) {
                 }
                 break;
             case pcpp::ARP:
-                // 处理ARP层字段
                 break;
             case pcpp::ICMP:
-                // 处理ICMP层字段
                 break;
             case pcpp::TCP:
                 {
@@ -54,11 +53,14 @@ void parseLayer(pcpp::Layer* layer, std::vector<LayerInfo>& layersInfo) {
                     currLayerInfo.fields["Destination Port"] = std::to_string(udpLayer->getUdpHeader()->portDst);
                 }
                 break;
-            case pcpp::HTTP:
+            case pcpp::HTTPResponse:
                 {
-                    auto httpLayer = dynamic_cast<pcpp::HttpLayer*>(layer);
-                    currLayerInfo.fields["HTTP Method"] = httpLayer->getFirstLine()->getMethod();
-                    currLayerInfo.fields["HTTP URI"] = httpLayer->getFirstLine()->getUri();
+                    auto httpRspsLayer = dynamic_cast<pcpp::HttpResponseLayer*>(layer);
+                    //currLayerInfo.fields["HTTP Method"] = httpLayer->getFirstLine()->getMethod();
+                    //currLayerInfo.fields["HTTP URI"] = httpLayer->getFirstLine()->getUri();
+                }
+            case pcpp::HTTPRequest:
+                {
                 }
                 break;
             // ... 处理其他应用层协议
