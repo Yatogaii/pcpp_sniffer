@@ -15,6 +15,9 @@
 #include <ostream>
 #include <vector>
 
+
+/// 从下至上的获取一个 Packet 的协议栈
+/// eg. Ethernet->IPv4->Tcp->Http
 std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& packet) {
     std::vector<pcpp::ProtocolType> protocols;
 
@@ -23,9 +26,6 @@ std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& pack
         protocols.push_back(currLayer->getProtocol());
         currLayer = currLayer->getNextLayer();
     }
-
-    // 反转protocols向量，这样顶层的协议就位于向量的开头
-    std::reverse(protocols.begin(), protocols.end());
 
     return protocols;
 }
