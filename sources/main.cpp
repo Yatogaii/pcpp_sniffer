@@ -15,9 +15,27 @@
 #include <ostream>
 #include <vector>
 
+std::vector<pcpp::ProtocolType> getProtocolStackFromTop(const pcpp::Packet& packet) {
+    std::vector<pcpp::ProtocolType> protocols;
+
+    pcpp::Layer* currLayer = packet.getFirstLayer();
+    while (currLayer != nullptr) {
+        protocols.push_back(currLayer->getProtocol());
+        currLayer = currLayer->getNextLayer();
+    }
+
+    // 反转protocols向量，这样顶层的协议就位于向量的开头
+    std::reverse(protocols.begin(), protocols.end());
+
+    return protocols;
+}
+
 /// 数据包处理函数
 void printPacketInfo(const pcpp::Packet& packet) {
-    pcpp::IPv4Layer* ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
+    // Step1: 获取 Packet 的协议栈
+    std::vector<pcpp::ProtocolType> protocols = getProtocolStackFromTop(packet);
+
+    pcpp::IPv4Layer* ipv4Layer = packet.getLayerOfType<pcpp::IPv4Layer>();
     pcpp::IPv6Layer* ipv6Layer = packet.getLayerOfType<pcpp::IPv6Layer>();
     pcpp::TcpLayer* tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
     pcpp::UdpLayer* udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
@@ -25,10 +43,9 @@ void printPacketInfo(const pcpp::Packet& packet) {
     pcpp::HttpRequestLayer* httReqLayer = packet.getLayerOfType<pcpp::HttpRequestLayer>() ;
     pcpp::HttpResponseLayer* httRspLayer = packet.getLayerOfType<pcpp::HttpResponseLayer>() ;
 
-
     // Print basic IP/TCP/UDP information
-    if (ipLayer != nullptr) {
-        std::cout << "IP packet: " << ipLayer->getSrcIPAddress() << " -> " << ipLayer->getDstIPAddress();
+    if (ipv4Layer != nullptr) {
+        std::cout << "IP packet: " << ipv4Layer->getSrcIPAddress() << " -> " << ipv4Layer->getDstIPAddress();
         if (tcpLayer != nullptr) {
             std::cout << " UDP " << udpLayer->getSrcPort() << " -> " << udpLayer->getDstPort();
         }
@@ -85,10 +102,10 @@ int main() {
 
     // Step2: 选择设备
     // Step1: 拼接列表字符串
-    std::vector<char> devDatas;
+    std::vector<std::string> devDatas;
     for(auto each : devLists){
-        each.push_back(each->getName());
-        each.push_back("!@#");
+        devDatas.push_back(each->getName());
+        devDatas.push_back("!@#");
     }
     // Step2.2: 发送给前端供用户选择
     clientSocket.Send(DataPack(devDatas));
@@ -117,7 +134,8 @@ int main() {
 
     dev->startCapture(onPacketArrives, nullptr);
 
-    // Step4: 主线程接受进一步的消息，阻塞
+    // Step4: 主线程接受进一步的消息
+    // TODO
     getchar();
 
     // Step5: 退出程序，或者重置状态后等待下一次抓包

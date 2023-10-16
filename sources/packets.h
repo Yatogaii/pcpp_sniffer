@@ -12,9 +12,10 @@ private:
 
 public:
     DataPack();
-    explicit DataPack(const std::string& data);
+    DataPack(const std::string& data);
+    DataPack(const std::vector<std::string>& data);
 
-    char* data();
+    const char* data() const;
     size_t size() const;
     std::string unpackData() const;
     void append(const char* data, size_t len);

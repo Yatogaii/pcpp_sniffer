@@ -12,7 +12,7 @@ set(CMAKE_TOOLCHAIN_FILE /root/vcpkg/scripts/buildsystems/vcpkg.cmake)
 find_package(unofficial-pcapplusplus CONFIG REQUIRED)
 
 # Specify the source files
-set(SOURCE_FILES main.cpp sockets.cpp)
+set(SOURCE_FILES main.cpp sockets.cpp packets.cpp)
 
 # Create the executable
 add_executable(SnifferCLI ${SOURCE_FILES})

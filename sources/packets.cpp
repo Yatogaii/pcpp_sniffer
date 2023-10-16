@@ -15,8 +15,21 @@ DataPack::DataPack(const std::string& data) {
     std::memcpy(buffer.data() + HEADER_SIZE, data.data(), data.size());
 }
 
-char* DataPack::data() {
-    return buffer.data();
+DataPack::DataPack(const std::vector<std::string>& dataList) {
+    size_t totalSize = 0;
+    for (const auto& data : dataList) {
+        totalSize += HEADER_SIZE + data.size();
+    }
+    buffer.resize(totalSize);
+
+    char* currentPos = buffer.data();
+    for (const auto& data : dataList) {
+        uint32_t dataSize = htonl(data.size());  // convert to network byte order
+        std::memcpy(currentPos, &dataSize, HEADER_SIZE);
+        currentPos += HEADER_SIZE;
+        std::memcpy(currentPos, data.data(), data.size());
+        currentPos += data.size();
+    }
 }
 
 size_t DataPack::size() const {
@@ -33,4 +46,8 @@ std::string DataPack::unpackData() const {
 
 void DataPack::append(const char* data, size_t len) {
     buffer.insert(buffer.end(), data, data + len);
+}
+
+const char* DataPack::data() const {
+    return buffer.data();
 }
