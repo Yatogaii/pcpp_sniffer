@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sniffer_web_ui/screens/network_selection_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -116,9 +117,15 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => NetworkSelectionPage()),
+          );
+        },
+        //        onPressed: _incrementCounter,
+        //        tooltip: 'Increment',
+        //        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
