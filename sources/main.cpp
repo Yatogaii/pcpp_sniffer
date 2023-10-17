@@ -130,7 +130,7 @@ int main() {
     std::vector<std::string> devDatas;
     for (auto each : devLists) {
         devDatas.push_back(each->getName());
-        devDatas.push_back("!@#");
+        devDatas.push_back(",");
     }
     // Step2.2: 发送给前端供用户选择
     clientSocket.Send(DataPack(devDatas, DataPack::kDataTypeDevList));
