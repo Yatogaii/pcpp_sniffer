@@ -1,5 +1,6 @@
 {
   "dependencies": [
-    "pcapplusplus"
+    "pcapplusplus",
+    "nlohmann-json"
   ]
 }

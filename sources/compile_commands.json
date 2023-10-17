@@ -1,1 +1,66 @@
-[]
+[
+  {
+    "arguments": [
+      "/usr/bin/x86_64-linux-gnu-g++-10",
+      "-isystem",
+      "/root/pcpp_sniffer/sources/build/vcpkg_installed/x64-linux/include",
+      "-pthread",
+      "-std=gnu++14",
+      "-o",
+      "CMakeFiles/SnifferCLI.dir/main.cpp.o",
+      "-c",
+      "/root/pcpp_sniffer/sources/main.cpp"
+    ],
+    "directory": "/root/pcpp_sniffer/sources/build",
+    "file": "/root/pcpp_sniffer/sources/main.cpp",
+    "output": "/root/pcpp_sniffer/sources/build/CMakeFiles/SnifferCLI.dir/main.cpp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/x86_64-linux-gnu-g++-10",
+      "-isystem",
+      "/root/pcpp_sniffer/sources/build/vcpkg_installed/x64-linux/include",
+      "-pthread",
+      "-std=gnu++14",
+      "-o",
+      "CMakeFiles/SnifferCLI.dir/sockets.cpp.o",
+      "-c",
+      "/root/pcpp_sniffer/sources/sockets.cpp"
+    ],
+    "directory": "/root/pcpp_sniffer/sources/build",
+    "file": "/root/pcpp_sniffer/sources/sockets.cpp",
+    "output": "/root/pcpp_sniffer/sources/build/CMakeFiles/SnifferCLI.dir/sockets.cpp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/x86_64-linux-gnu-g++-10",
+      "-isystem",
+      "/root/pcpp_sniffer/sources/build/vcpkg_installed/x64-linux/include",
+      "-pthread",
+      "-std=gnu++14",
+      "-o",
+      "CMakeFiles/SnifferCLI.dir/packets.cpp.o",
+      "-c",
+      "/root/pcpp_sniffer/sources/packets.cpp"
+    ],
+    "directory": "/root/pcpp_sniffer/sources/build",
+    "file": "/root/pcpp_sniffer/sources/packets.cpp",
+    "output": "/root/pcpp_sniffer/sources/build/CMakeFiles/SnifferCLI.dir/packets.cpp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/x86_64-linux-gnu-g++-10",
+      "-isystem",
+      "/root/pcpp_sniffer/sources/build/vcpkg_installed/x64-linux/include",
+      "-pthread",
+      "-std=gnu++14",
+      "-o",
+      "CMakeFiles/SnifferCLI.dir/protocols.cpp.o",
+      "-c",
+      "/root/pcpp_sniffer/sources/protocols.cpp"
+    ],
+    "directory": "/root/pcpp_sniffer/sources/build",
+    "file": "/root/pcpp_sniffer/sources/protocols.cpp",
+    "output": "/root/pcpp_sniffer/sources/build/CMakeFiles/SnifferCLI.dir/protocols.cpp.o"
+  }
+]
