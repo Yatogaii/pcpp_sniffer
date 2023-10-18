@@ -31,6 +31,7 @@ std::string formatLayerInfos(const std::vector<LayerInfo> &layerInfos) {
         for (const auto &[key, value] : info.fields) {
             jsonObject["fields"][key] = value;
         }
+        jsonObject["details"] = "details";
         jsonArray.push_back(jsonObject);
     }
 
@@ -85,7 +86,7 @@ void onPacketArrives(pcpp::RawPacket *packet, pcpp::PcapLiveDevice *dev,
     // TODO 尚未实现，这一步到底需要存放哪些信息不好确定
     // printPacketInfo(parsedPacket);
     std::vector<LayerInfo> packetLayerInfos;
-    parseLayer(parsedPacket.getFirstLayer(), packetLayerInfos);
+    parseLayer(parsedPacket.getFirstLayer(), packet, packetLayerInfos);
 
     // Step3: 把处理到的数据包发给前端进行解析
     // 需要确定数据包拼接的形式
@@ -137,7 +138,10 @@ int main() {
     for (auto each : devLists) {
         devDatas += each->getName();
         devDatas += ",";
+        devDatas += each->getIPv4Address().toString();
+        devDatas += ";";
     }
+
     // std::vector<std::string> devDatas;
     // for (auto each : devLists) {
     //     devDatas.push_back(each->getName());
@@ -227,58 +231,63 @@ int main() {
 
     pcpp::PcapLiveDevice *dev;
     uWS::App()
-        .ws<char>("/*",
-                  {/* .open handler */
-                   .open =
-                       [](auto *ws) {
-                           std::cout << "Client connected!" << std::endl;
-                       },
+        .ws<char>(
+            "/*",
+            {/* .open handler */
+             .open =
+                 [](auto *ws) {
+                     std::cout << "Client connected!" << std::endl;
+                 },
 
-                   /* .message handler */
-                   .message =
-                       [devDatas, dev](auto *ws, std::string_view message,
-                                       uWS::OpCode opCode) mutable {
-                           if (message == "GET_DEVICES") {
-                               // This is just an example of a loop that
-                               // sends a message every second. You can
-                               // adjust it according to your
-                               // requirements.
-                               std::cout << "get device";
-                               ws->send(devDatas.c_str(), opCode);
-                           } else if (message == "START_SNIFF") {
-                               // Handle other types of messages here
-                               std::cout << "start sniff recived";
-                               dev = pcpp::PcapLiveDeviceList::getInstance()
-                                         .getPcapLiveDeviceByIp("172.24.27.33");
-                               if (!dev) {
-                                   std::cerr << "Cannot find specific device!"
-                                             << std::endl;
-                                   return;
-                               }
+             /* .message handler */
+             .message =
+                 [devDatas, dev](auto *ws, std::string_view message,
+                                 uWS::OpCode opCode) mutable {
+                     if (message == "GET_DEVICES") {
+                         // This is just an example of a loop that
+                         // sends a message every second. You can
+                         // adjust it according to your
+                         // requirements.
+                         std::cout << "get device";
+                         ws->send(devDatas.c_str(), opCode);
+                     } else if (message == "START_SNIFF") {
+                         // Handle other types of messages here
+                         std::cout << "start sniff recived";
+                         // dev = pcpp::PcapLiveDeviceList::getInstance()
+                         // .getPcapLiveDeviceByIp("172.24.27.33");
+                         printf("start cap");
+                         // TODO 这里需要加错误处理
+                         dev->startCapture(onPacketArrives, nullptr);
+                         isCapture = true;
+                         while (true) {
+                             ws->send(syncQueue.pop().c_str(), opCode);
+                         }
+                         // 这里开始通过同步队列不断的向客户端发送消息
+                     } else if (message == "STOP_SNIFF") {
+                         isCapture = false;
+                         // 认为是接受到的网卡名称
+                     } else {
+                         std::string name = {message.begin(), message.end()};
+                         dev = pcpp::PcapLiveDeviceList::getInstance()
+                                   .getPcapLiveDeviceByName(name);
+                         if (!dev) {
+                             std::cerr << "Cannot find specific device!"
+                                       << std::endl;
+                             return;
+                         }
 
-                               if (!dev->open()) {
-                                   std::cerr << "Cannot open device!"
-                                             << std::endl;
-                                   return;
-                               }
+                         if (!dev->open()) {
+                             std::cerr << "Cannot open device!" << std::endl;
+                             return;
+                         }
+                     }
+                 },
 
-                               printf("start cap");
-                               dev->startCapture(onPacketArrives, nullptr);
-                               isCapture = true;
-                               while (true) {
-                                   ws->send(syncQueue.pop().c_str(), opCode);
-                               }
-                               // 这里开始通过同步队列不断的向客户端发送消息
-                           } else if (message == "STOP_SNIFF") {
-                               isCapture = false;
-                           }
-                       },
-
-                   /* .close handler */
-                   .close =
-                       [](auto *ws, int code, std::string_view message) {
-                           std::cout << "Client disconnected!" << std::endl;
-                       }})
+             /* .close handler */
+             .close =
+                 [](auto *ws, int code, std::string_view message) {
+                     std::cout << "Client disconnected!" << std::endl;
+                 }})
         .listen(28080,
                 [](auto *listen_socket) {
                     if (listen_socket) {

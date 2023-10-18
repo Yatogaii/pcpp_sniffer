@@ -1,4 +1,5 @@
 #include "protocols.h"
+#include <Device.h>
 #include <Layer.h>
 #include <cstring>
 
@@ -86,7 +87,8 @@ std::string getProtocolName(pcpp::ProtocolType protocol) {
     }
 }
 
-void parseLayer(pcpp::Layer *layer, std::vector<LayerInfo> &layersInfo) {
+void parseLayer(pcpp::Layer *layer, pcpp::RawPacket *packet,
+                std::vector<LayerInfo> &layersInfo) {
     // 存放最上的一个 layer ，因为每个包的payload只存放最上面一层协议的。
     pcpp::Layer *lastLayer = layer;
     while (layer) {
@@ -154,8 +156,8 @@ void parseLayer(pcpp::Layer *layer, std::vector<LayerInfo> &layersInfo) {
         // 如果没有下一层协议了，当前协议就是最顶层的
         // 存放payload，并退出循环
         if (!layer->getNextLayer()) {
-            memcpy(currLayerInfo.payload, layer->getLayerPayload(),
-                   layer->getLayerPayloadSize());
+            memcpy(currLayerInfo.payload, packet->getRawData(),
+                   packet->getRawDataLen());
             layersInfo.push_back(currLayerInfo);
             break;
         }

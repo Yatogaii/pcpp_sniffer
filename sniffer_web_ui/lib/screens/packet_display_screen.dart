@@ -32,7 +32,7 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Packets Display")),
+      appBar: AppBar(title: const Text("Packets Display")),
       body: Column(
         children: <Widget>[
           Padding(
@@ -42,7 +42,7 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
               Expanded(
                 child: TextField(
                   controller: _filterController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Filter',
                     border: OutlineInputBorder(),
                   ),
@@ -51,14 +51,14 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
                   },
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
                   // Implement your filtering logic here
                 },
-                child: Text('筛选'),
+                child: const Text('筛选'),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
                   // Implement your start capturing logic here

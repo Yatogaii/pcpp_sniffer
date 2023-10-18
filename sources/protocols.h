@@ -1,6 +1,7 @@
 #ifndef _PROTOCOLS_H_
 #define _PROTOCOLS_H_
 
+#include <Device.h>
 #include <DnsLayer.h>
 #include <HttpLayer.h>
 #include <IPv4Layer.h>
@@ -25,6 +26,7 @@ struct LayerInfo {
 };
 
 std::vector<pcpp::ProtocolType> getProtocolStack(const pcpp::Packet &packet);
-void parseLayer(pcpp::Layer *layer, std::vector<LayerInfo> &layersInfo);
+void parseLayer(pcpp::Layer *layer, pcpp::RawPacket *packet,
+                std::vector<LayerInfo> &layersInfo);
 
 #endif
