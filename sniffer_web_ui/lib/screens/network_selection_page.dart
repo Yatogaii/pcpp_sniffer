@@ -1,6 +1,9 @@
+import 'dart:html';
+
 import 'package:flutter/material.dart';
 import 'package:sniffer_web_ui/screens/packet_display_screen.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:async';
 
 void main() => runApp(MyApp());
 
@@ -34,6 +37,9 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
   late TextEditingController _ipController;
   late TextEditingController _portController;
   late WebSocketChannel _channel;
+  late StreamController streamController;
+  late StreamSubscription _streamSubscription;
+  bool isScreen2 = false;
 
   @override
   void initState() {
@@ -118,12 +124,17 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     try {
       _channel = WebSocketChannel.connect(Uri.parse('ws://$host:$port'));
 
-// 发送 "GET_DEVICE" 消息给服务器
-      _channel.sink.add("GET_DEVICES");
-
-// 监听来自服务器的消息
+      streamController = StreamController.broadcast();
       _channel.stream.listen((data) {
-        print(data);
+       //   print("channel recv");
+       // print(data);
+        streamController.add(data);
+      });
+
+      final broadcastStream = streamController.stream;
+// 监听来自服务器的消息
+      _streamSubscription = broadcastStream.listen((data) {
+        // print(data);
         final serverResponse = data.trim();
         final deviceEntries = serverResponse.split(';');
 
@@ -140,6 +151,9 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
           networkDevices = devices;
         });
       });
+
+// 发送 "GET_DEVICE" 消息给服务器
+      _channel.sink.add("GET_DEVICES");
     } catch (error) {
       print('Unable to connect: $error');
       // Handle the error, maybe show a message to the user
@@ -151,16 +165,29 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     if (selectedDevice != null) {
       print(
           "Confirmed selection: ${selectedDevice!.name}, ${selectedDevice!.ip}");
-      // 这里处理所选设备
+      _channel.sink.add(selectedDevice!.name);
     } else {
       print("No device selected.");
       return;
     }
+
+    _streamSubscription.cancel();
+
     // Implement logic to process the selected device and proceed to the next screen or step.
+    // Navigator.pushReplacement(
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => PacketDisplayScreen(channel: _channel)),
+          builder: (context) => PacketDisplayScreen(
+              channel: _channel, streamController: streamController)),
     );
+  }
+
+  // 当离开该屏幕或销毁widget时
+  @override
+  void dispose() {
+    print("dispose");
+    //_streamSubscription.cancel();
+    super.dispose();
   }
 }
