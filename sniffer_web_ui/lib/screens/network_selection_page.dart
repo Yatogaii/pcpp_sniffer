@@ -148,8 +148,9 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
 
   // handle confirm button
   void _selectDevice() {
-        if (selectedDevice != null) {
-      print("Confirmed selection: ${selectedDevice!.name}, ${selectedDevice!.ip}");
+    if (selectedDevice != null) {
+      print(
+          "Confirmed selection: ${selectedDevice!.name}, ${selectedDevice!.ip}");
       // 这里处理所选设备
     } else {
       print("No device selected.");
@@ -158,7 +159,8 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     // Implement logic to process the selected device and proceed to the next screen or step.
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PacketDisplayScreen()),
+      MaterialPageRoute(
+          builder: (context) => PacketDisplayScreen(channel: _channel)),
     );
   }
 }
