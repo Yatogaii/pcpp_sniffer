@@ -1,0 +1,9 @@
+[requires]
+pcapplusplus/22.11
+usockets/0.8.6
+uwebsockets/20.47.0
+nlohmann_json/3.9.1 
+
+[generators]
+CMakeDeps
+CMakeToolchain

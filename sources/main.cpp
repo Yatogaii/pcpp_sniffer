@@ -7,11 +7,15 @@
 
 #include <nlohmann/json.hpp>
 
+// #include "App.h"
+#include "uWebSockets/App.h"
+
 #include "packets.h"
 #include "protocols.h"
 #include "sockets.h"
 
 SyncQueue<std::string> syncQueue;
+bool isCapture = false;
 
 /// formatLayerInfos, 基本上一个 packet 就对应一个LayerInfo ，
 /// payload什么的也都存放在这里
@@ -86,6 +90,7 @@ void onPacketArrives(pcpp::RawPacket *packet, pcpp::PcapLiveDevice *dev,
     // Step3: 把处理到的数据包发给前端进行解析
     // 需要确定数据包拼接的形式
     std::string serialLayerInfos = formatLayerInfos(packetLayerInfos);
+    std::cout << serialLayerInfos;
     syncQueue.push(serialLayerInfos);
 }
 
@@ -99,25 +104,26 @@ int main() {
     // Step0: 初始化Socket，与前端通过socket通信
     // 基本流程：
     //   监听-收到连接-发送网卡列表-选择网卡-开始抓包
-    Socket serverSocket;
-    if (!serverSocket.Create()) {
-        std::cerr << "Error creating server socket." << std::endl;
-        return 1;
-    }
-    if (!serverSocket.Bind("127.0.0.1", 28080)) {
-        std::cerr << "Error binding to address." << std::endl;
-        return 1;
-    }
-    if (!serverSocket.Listen()) {
-        std::cerr << "Error listening for connections." << std::endl;
-        return 1;
-    }
-    Socket clientSocket;
-    if (!serverSocket.Accept(clientSocket)) {
-        // TODO
-    }
+    //   必须换成WebSocket了
+    /// Socket serverSocket;
+    /// if (!serverSocket.Create()) {
+    ///     std::cerr << "Error creating server socket." << std::endl;
+    ///     return 1;
+    /// }
+    /// if (!serverSocket.Bind("127.0.0.1", 28080)) {
+    ///     std::cerr << "Error binding to address." << std::endl;
+    ///     return 1;
+    /// }
+    /// if (!serverSocket.Listen()) {
+    ///     std::cerr << "Error listening for connections." << std::endl;
+    ///     return 1;
+    /// }
+    /// Socket clientSocket;
+    /// if (!serverSocket.Accept(clientSocket)) {
+    ///     // TODO
+    /// }
 
-    // Step1: 获取网卡设备列表
+    // Step0: 获取网卡设备列表
     std::vector<pcpp::PcapLiveDevice *> devLists = getLiveDevices();
     /// TEST: Done
     /// for (auto each : devLists) {
@@ -125,56 +131,175 @@ int main() {
     ///}
     /// return 0;
 
-    // Step2: 选择设备
-    // Step1: 拼接列表字符串
-    std::vector<std::string> devDatas;
+    // Step1: 选择设备
+    // Step1.1: 拼接列表字符串
+    std::string devDatas;
     for (auto each : devLists) {
-        devDatas.push_back(each->getName());
-        devDatas.push_back(",");
+        devDatas += each->getName();
+        devDatas += ",";
     }
-    // Step2.2: 发送给前端供用户选择
-    clientSocket.Send(DataPack(devDatas, DataPack::kDataTypeDevList));
+    // std::vector<std::string> devDatas;
+    // for (auto each : devLists) {
+    //     devDatas.push_back(each->getName());
+    //     devDatas.push_back(",");
+    // }
+    // Step1.2: 发送给前端供用户选择
+    // clientSocket.Send(DataPack(devDatas, DataPack::kDataTypeDevList));
 
-    // Step2.3: 接受前端返回的数据
+    // Step1.3: 接受前端返回的数据
     std::string recvData;
-    clientSocket.Receive(recvData);
+    // clientSocket.Receive(recvData);
     // 判断数据是否合理
     // TODO 可能需要对recvDtas 进行提取
-    if (std::find(devDatas.begin(), devDatas.end(), recvData) ==
-        devDatas.end()) {
-        // TODO 接受到的数据不在网卡列表里，错误处理
-    }
+    // if (std::find(devDatas.begin(), devDatas.end(), recvData) ==
+    //     devDatas.end()) {
+    //     // TODO 接受到的数据不在网卡列表里，错误处理
+    // }
+
+    // Step2:  建立websocket
+    // uWS::App()
+    //    .ws<char>("/*",
+    //              {/* .open handler */
+    //               .open =
+    //                   [](auto *ws) {
+    //                       std::cout << "Client connected!" << std::endl;
+    //                   },
+
+    //               /* .message handler */
+    //               .message =
+    //                   [devDatas](auto *ws, std::string_view message,
+    //                              uWS::OpCode opCode) {
+    //                       if (message == "GET_DEVICE") {
+    //                           // This is just an example of a loop that
+    //                           // sends a message every second. You can
+    //                           // adjust it according to your
+    //                           // requirements.
+    //                           ws->send(devDatas.c_str(), opCode);
+    //                       } else if (message == "START_SNIFF") {
+    //                           // Handle other types of messages here
+    //                           std::cout << "start sniff recived";
+    //                           isCapture = true;
+    //                           while (true) {
+    //                               ws->send(syncQueue.pop().c_str(), opCode);
+    //                           }
+    //                           // 这里开始通过同步队列不断的向客户端发送消息
+    //                       } else if (message == "STOP_SNIFF") {
+    //                           isCapture = false;
+    //                       }
+    //                   },
+
+    //               /* .close handler */
+    //               .close =
+    //                   [](auto *ws, int code, std::string_view message) {
+    //                       std::cout << "Client disconnected!" << std::endl;
+    //                   }})
+    //    .listen(28080,
+    //            [](auto *listen_socket) {
+    //                if (listen_socket) {
+    //                    std::cout << "Server is listening on port 28080"
+    //                              << std::endl;
+    //                } else {
+    //                    std::cerr << "Error listening on port 28080"
+    //                              << std::endl;
+    //                    exit(1);
+    //                }
+    //            })
+    //    .run();
 
     // Step3: 开个子线程开始抓包，主线程接受进一步的消息
     // pcpp::PcapLiveDevice* dev =
     // pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByName(recvData.c_str());
-    pcpp::PcapLiveDevice *dev =
-        pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByIp(
-            "172.24.27.33");
-    if (!dev) {
-        std::cerr << "Cannot find specific device!" << std::endl;
-        return 1;
-    }
+    // pcpp::PcapLiveDevice *dev =
+    //    pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByIp(
+    //        "172.24.27.33");
+    // if (!dev) {
+    //    std::cerr << "Cannot find specific device!" << std::endl;
+    //    return 1;
+    //}
 
-    if (!dev->open()) {
-        std::cerr << "Cannot open device!" << std::endl;
-        return 1;
-    }
+    // if (!dev->open()) {
+    //     std::cerr << "Cannot open device!" << std::endl;
+    //     return 1;
+    // }
 
-    dev->startCapture(onPacketArrives, nullptr);
+    // printf("start cap");
+    // dev->startCapture(onPacketArrives, nullptr);
 
-    // Step4: 主线程接受进一步的消息
-    // TODO 这里可能需要接受消息来进行下一步操作
-    while (true) {
-        clientSocket.Send(
-            DataPack(syncQueue.pop(), DataPack::kDataTypeLayerInfos));
-    }
-    getchar();
+    pcpp::PcapLiveDevice *dev;
+    uWS::App()
+        .ws<char>("/*",
+                  {/* .open handler */
+                   .open =
+                       [](auto *ws) {
+                           std::cout << "Client connected!" << std::endl;
+                       },
+
+                   /* .message handler */
+                   .message =
+                       [devDatas, dev](auto *ws, std::string_view message,
+                                       uWS::OpCode opCode) mutable {
+                           if (message == "GET_DEVICES") {
+                               // This is just an example of a loop that
+                               // sends a message every second. You can
+                               // adjust it according to your
+                               // requirements.
+                               std::cout << "get device";
+                               ws->send(devDatas.c_str(), opCode);
+                           } else if (message == "START_SNIFF") {
+                               // Handle other types of messages here
+                               std::cout << "start sniff recived";
+                               dev = pcpp::PcapLiveDeviceList::getInstance()
+                                         .getPcapLiveDeviceByIp("172.24.27.33");
+                               if (!dev) {
+                                   std::cerr << "Cannot find specific device!"
+                                             << std::endl;
+                                   return;
+                               }
+
+                               if (!dev->open()) {
+                                   std::cerr << "Cannot open device!"
+                                             << std::endl;
+                                   return;
+                               }
+
+                               printf("start cap");
+                               dev->startCapture(onPacketArrives, nullptr);
+                               isCapture = true;
+                               while (true) {
+                                   ws->send(syncQueue.pop().c_str(), opCode);
+                               }
+                               // 这里开始通过同步队列不断的向客户端发送消息
+                           } else if (message == "STOP_SNIFF") {
+                               isCapture = false;
+                           }
+                       },
+
+                   /* .close handler */
+                   .close =
+                       [](auto *ws, int code, std::string_view message) {
+                           std::cout << "Client disconnected!" << std::endl;
+                       }})
+        .listen(28080,
+                [](auto *listen_socket) {
+                    if (listen_socket) {
+                        std::cout << "Server is listening on port 28080"
+                                  << std::endl;
+                    } else {
+                        std::cerr << "Error listening on port 28080"
+                                  << std::endl;
+                        exit(1);
+                    }
+                })
+        .run();
+    // Step4: 主线程不再需要监听消息，通过uWS来进行通信
+    while (isCapture)
+        ;
 
     // Step5: 退出程序，或者重置状态后等待下一次抓包
     // TODO
-    dev->stopCapture();
-    dev->close();
+
+    // dev->stopCapture();
+    // dev->close();
 
     return 0;
 }
