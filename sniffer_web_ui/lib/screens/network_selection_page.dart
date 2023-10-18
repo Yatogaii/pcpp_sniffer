@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sniffer_web_ui/screens/packet_display_screen.dart';
-import 'dart:io';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() => runApp(MyApp());
 
@@ -17,6 +17,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// 假设NetworkDevice是设备的数据模型
+class NetworkDevice {
+  final String name;
+  final String ip;
+
+  NetworkDevice(this.name, this.ip);
+}
+
 class NetworkSelectionPage extends StatefulWidget {
   @override
   _NetworkSelectionPageState createState() => _NetworkSelectionPageState();
@@ -25,7 +33,7 @@ class NetworkSelectionPage extends StatefulWidget {
 class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
   late TextEditingController _ipController;
   late TextEditingController _portController;
-  Socket? _socket;
+  late WebSocketChannel _channel;
 
   @override
   void initState() {
@@ -34,8 +42,8 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     _portController = TextEditingController();
   }
 
-  List<String> networkDevices =
-      []; // This should be populated after the connection is made.
+  List<NetworkDevice> networkDevices = []; // 用于存储设备列表的变量
+  NetworkDevice? selectedDevice; // 用于跟踪所选设备
 
   @override
   Widget build(BuildContext context) {
@@ -60,14 +68,35 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
               ],
             ),
             SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: networkDevices.length,
-                itemBuilder: (context, index) => ListTile(
-                  title: Text(networkDevices[index]),
-                  // Add more details for each network device if needed
-                ),
-              ),
+            DataTable(
+              columns: [
+                DataColumn(label: Text('网卡名称')),
+                DataColumn(label: Text('IP地址')),
+              ],
+              rows: networkDevices
+                  .map((device) => DataRow(
+                        selected: selectedDevice == device,
+                        onSelectChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              selectedDevice = device;
+                            } else {
+                              selectedDevice = null;
+                            }
+                          });
+                        },
+                        cells: [
+                          DataCell(Text(device.name)),
+                          DataCell(Text(device.ip)),
+                        ],
+                      ))
+                  .toList(),
+//              networkDevices
+//                  .map((device) => DataRow(cells: [
+//                        DataCell(Text(device.name)),
+//                        DataCell(Text(device.ip)),
+//                      ]))
+//                  .toList(),
             ),
             ElevatedButton(onPressed: _selectDevice, child: Text("Confirm"))
           ],
@@ -87,20 +116,29 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     }
 
     try {
-      _socket = await Socket.connect(host, port);
+      _channel = WebSocketChannel.connect(Uri.parse('ws://$host:$port'));
 
-      // Once connected, listen to the data from the server
-      _socket!.listen((List<int> data) {
-        final serverResponse = String.fromCharCodes(data).trim();
-        final devices = serverResponse.split(',');
-        print(serverResponse);
+// 发送 "GET_DEVICE" 消息给服务器
+      _channel.sink.add("GET_DEVICES");
 
-        // You can now use 'devices' list to display or for further processing
-      }, onError: (error) {
-        print("Error: $error");
-        // Handle the error, maybe show a message to the user
-      }, onDone: () {
-        _socket!.close();
+// 监听来自服务器的消息
+      _channel.stream.listen((data) {
+        print(data);
+        final serverResponse = data.trim();
+        final deviceEntries = serverResponse.split(';');
+
+        List<NetworkDevice> devices = [];
+        for (var entry in deviceEntries) {
+          final parts = entry.split(',');
+          if (parts.length >= 2) {
+            // 确保数据格式是正确的
+            devices.add(NetworkDevice(parts[0], parts[1]));
+          }
+        }
+        // 更新界面
+        setState(() {
+          networkDevices = devices;
+        });
       });
     } catch (error) {
       print('Unable to connect: $error');
@@ -108,8 +146,15 @@ class _NetworkSelectionPageState extends State<NetworkSelectionPage> {
     }
   }
 
+  // handle confirm button
   void _selectDevice() {
-    print("test");
+        if (selectedDevice != null) {
+      print("Confirmed selection: ${selectedDevice!.name}, ${selectedDevice!.ip}");
+      // 这里处理所选设备
+    } else {
+      print("No device selected.");
+      return;
+    }
     // Implement logic to process the selected device and proceed to the next screen or step.
     Navigator.push(
       context,

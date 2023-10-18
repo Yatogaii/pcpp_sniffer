@@ -27,7 +27,8 @@ environment:
 # dependencies can be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
-dependencies:
+dependencies: 
+  web_socket_channel: ^2.4.0
   flutter:
     sdk: flutter
 
