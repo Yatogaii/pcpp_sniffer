@@ -13,6 +13,39 @@ class PacketDisplayScreen extends StatefulWidget {
   _PacketDisplayScreenState createState() => _PacketDisplayScreenState();
 }
 
+class PacketListItem extends StatelessWidget {
+  final Packet packet;
+  final Function(Packet) onSelect;
+
+  PacketListItem({required this.packet, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onSelect(packet),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey),
+            right: BorderSide(color: Colors.grey),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(packet.time)),
+            Expanded(child: Text(packet.srcIp)),
+            Expanded(child: Text(packet.srcPort)),
+            Expanded(child: Text(packet.dstIp)),
+            Expanded(child: Text(packet.dstPort)),
+            Expanded(child: Text(packet.protocol)),
+            Expanded(child: Text(packet.length)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class Packet {
   final String time;
   final String srcIp;
@@ -34,92 +67,92 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
   String? _selectedPacketDetails;
   StreamSubscription? _streamSubscription;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Packets Display")),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _filterController,
-                    decoration: const InputDecoration(
-                      labelText: 'Filter',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      // Implement your filter logic here if needed
-                    },
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: const Text("Packets Display")),
+    body: Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: _filterController,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter',
+                    border: OutlineInputBorder(),
                   ),
+                  onChanged: (value) {
+                    // Implement your filter logic here if needed
+                  },
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _doFilter,
-                  child: const Text('筛选'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _startSniffer,
-                  child: Text('开始抓包'),
-                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: _doFilter,
+                child: const Text('筛选'),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: _startSniffer,
+                child: Text('开始抓包'),
+              ),
+            ],
+          ),
+        ),
+        // 表头
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            color: Colors.grey[300], // 背景色
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(child: Text('时间')),
+                Expanded(child: Text('IP源地址')),
+                Expanded(child: Text('源端口')),
+                Expanded(child: Text('目的IP地址')),
+                Expanded(child: Text('目的端口')),
+                Expanded(child: Text('协议')),
+                Expanded(child: Text('长度')),
               ],
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  const DataColumn(label: Text('时间')),
-                  const DataColumn(label: Text('IP源地址')),
-                  const DataColumn(label: Text('源端口')),
-                  const DataColumn(label: Text('目的IP地址')),
-                  const DataColumn(label: Text('目的端口')),
-                  const DataColumn(label: Text('协议')),
-                  const DataColumn(label: Text('长度')),
-                ],
-                rows: packets
-                    .map((packet) => DataRow(
-                          cells: [
-                            DataCell(Text(packet.time)),
-                            DataCell(Text(packet.srcIp)),
-                            DataCell(Text(packet.srcPort)),
-                            DataCell(Text(packet.dstIp)),
-                            DataCell(Text(packet.dstPort)),
-                            DataCell(Text(packet.protocol)),
-                            DataCell(Text(packet.length)),
-                          ],
-                          onSelectChanged: (bool? selected) {
-                            if (selected != null && selected) {
-                              setState(() {
-                                _selectedPacketDetails = packet
-                                    .details; // assuming `details` is a field in the `packet` object
-                              });
-                            }
-                          },
-                        ))
-                    .toList(),
-              ),
+        ),
+        // 数据
+        Expanded(
+          child: ListView.builder(
+            itemCount: packets.length,
+            itemBuilder: (context, index) {
+              final packet = packets[index];
+              return PacketListItem(
+                packet: packet,
+                onSelect: (selectedPacket) {
+                  setState(() {
+                    _selectedPacketDetails = selectedPacket.details;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+        Divider(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(_selectedPacketDetails ?? "Select a packet to view details."),
             ),
           ),
-          Divider(),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(_selectedPacketDetails ??
-                    "Select a packet to view details."),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _startSniffer() {
     print("start sniff");
@@ -141,9 +174,9 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
           packetObj["length"],
           packetObj["details"]));
       if (_tempPackets.length >= 300) {
-          packets.addAll(_tempPackets);
-          _tempPackets.clear();
-          setState(() {});
+        packets.addAll(_tempPackets);
+        _tempPackets.clear();
+        setState(() {});
       }
     });
   }
