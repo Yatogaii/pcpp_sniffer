@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:flutter/material.dart';
 import 'package:sniffer_web_ui/screens/packet_display_screen.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';

@@ -29,6 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies: 
   web_socket_channel: ^2.4.0
+  url_launcher: ^6.0.12
   flutter:
     sdk: flutter
 
