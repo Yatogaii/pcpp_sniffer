@@ -284,7 +284,7 @@ int main() {
                          std::thread([=]() {
                              while (isCapture) {
                                  ws->send(syncQueue.pop().c_str(), opCode);
-                                 std::cout << "send" << std::endl;
+                                 // std::cout << "send" << std::endl;
                              }
                          }).detach();
 

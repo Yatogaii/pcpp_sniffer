@@ -4,6 +4,19 @@
 #include <ProtocolType.h>
 #include <bits/types/struct_timespec.h>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+// 把rawdata转化为16进制，要不然会报错
+std::string toHex(const uint8_t *data, size_t len) {
+    std::stringstream ss;
+    for (size_t i = 0; i < len; ++i) {
+        ss << std::hex << std::setw(2) << std::setfill('0')
+           << static_cast<int>(data[i]);
+    }
+    return ss.str();
+}
 
 /// 从下至上的获取一个 Packet 的协议栈
 /// eg. Ethernet->IPv4->Tcp->Http
@@ -233,8 +246,7 @@ PacketInfo extractPacketInfo(pcpp::RawPacket *rawPacket,
     // details
     info.details = "";
     info.details += parsedPacket.toString();
-    info.details +=
-        std::string(reinterpret_cast<const char *>(rawPacket->getRawData()));
+    info.details += toHex(rawPacket->getRawData(), rawPacket->getRawDataLen());
 
     return info;
 }
