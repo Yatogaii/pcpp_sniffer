@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert'; // for json convert
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:math';
 
 class PacketDisplayScreen extends StatefulWidget {
   final WebSocketChannel channel;
@@ -62,97 +63,101 @@ class Packet {
 
 class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
   List<Packet> packets = [];
+  List<Packet> _bakcupPackets = [];
   List<Packet> _tempPackets = [];
+  List<Packet> _filterdPackets = [];
+
   final TextEditingController _filterController = TextEditingController();
   String? _selectedPacketDetails;
   StreamSubscription? _streamSubscription;
+  bool isFiltering = false;
 
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(title: const Text("Packets Display")),
-    body: Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: _filterController,
-                  decoration: const InputDecoration(
-                    labelText: 'Filter',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (value) {
-                    // Implement your filter logic here if needed
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: _doFilter,
-                child: const Text('筛选'),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: _startSniffer,
-                child: Text('开始抓包'),
-              ),
-            ],
-          ),
-        ),
-        // 表头
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            color: Colors.grey[300], // 背景色
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Packets Display")),
+      body: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Row(
-              children: [
-                Expanded(child: Text('时间')),
-                Expanded(child: Text('IP源地址')),
-                Expanded(child: Text('源端口')),
-                Expanded(child: Text('目的IP地址')),
-                Expanded(child: Text('目的端口')),
-                Expanded(child: Text('协议')),
-                Expanded(child: Text('长度')),
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _filterController,
+                    decoration: const InputDecoration(
+                      labelText: 'Filter',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Implement your filter logic here if needed
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _doFilter,
+                  child: const Text('筛选'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _startSniffer,
+                  child: Text('开始抓包'),
+                ),
               ],
             ),
           ),
-        ),
-        // 数据
-        Expanded(
-          child: ListView.builder(
-            itemCount: packets.length,
-            itemBuilder: (context, index) {
-              final packet = packets[index];
-              return PacketListItem(
-                packet: packet,
-                onSelect: (selectedPacket) {
-                  setState(() {
-                    _selectedPacketDetails = selectedPacket.details;
-                  });
-                },
-              );
-            },
-          ),
-        ),
-        Divider(),
-        Expanded(
-          child: SingleChildScrollView(
+          // 表头
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              color: Colors.grey[300], // 背景色
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(_selectedPacketDetails ?? "Select a packet to view details."),
+              padding: EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(child: Text('时间')),
+                  Expanded(child: Text('IP源地址')),
+                  Expanded(child: Text('源端口')),
+                  Expanded(child: Text('目的IP地址')),
+                  Expanded(child: Text('目的端口')),
+                  Expanded(child: Text('协议')),
+                  Expanded(child: Text('长度')),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+          // 数据
+          Expanded(
+            child: ListView.builder(
+              itemCount: packets.length,
+              itemBuilder: (context, index) {
+                final packet = packets[index];
+                return PacketListItem(
+                  packet: packet,
+                  onSelect: (selectedPacket) {
+                    setState(() {
+                      _selectedPacketDetails = selectedPacket.details;
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          Divider(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(_selectedPacketDetails ??
+                    "Select a packet to view details."),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _startSniffer() {
     print("start sniff");
@@ -173,15 +178,83 @@ Widget build(BuildContext context) {
           packetObj["protocol"],
           packetObj["length"],
           packetObj["details"]));
-      if (_tempPackets.length >= 300) {
-        packets.addAll(_tempPackets);
-        _tempPackets.clear();
-        setState(() {});
+      if (_tempPackets.length >= 30) {
+        // 如果正在筛选，不加入packets, 不 setState
+        if (isFiltering) {
+          _bakcupPackets.addAll(_tempPackets);
+          _tempPackets.clear();
+        } else {
+          packets.addAll(_tempPackets);
+          _tempPackets.clear();
+          setState(() {});
+        }
       }
     });
   }
 
-  void _doFilter() {}
+  // For  filter function
+  List<Packet> filterPacketsChunk(List<Packet> chunk, String filter) {
+    var conditions = filter.split('and');
+    List<Packet> results = List.from(chunk); // 初始列表为所有数据包
+
+    for (var condition in conditions) {
+      condition = condition.trim();
+
+      if (condition.startsWith('ip=')) {
+        var ip = condition.split('=')[1].trim();
+        results = results
+            .where((packet) => packet.srcIp == ip || packet.dstIp == ip)
+            .toList();
+      } else if (condition.startsWith('port=')) {
+        var port = condition.split('=')[1].trim();
+        results = results
+            .where((packet) => packet.srcPort == port || packet.dstPort == port)
+            .toList();
+      } else if (condition.startsWith('protocol=')) {
+        var proto = condition.split('=')[1].trim();
+        results = results.where((packet) => packet.protocol == proto).toList();
+      }
+    }
+
+    return results;
+  }
+
+  Future<List<Packet>> parallelFilter(String filter) {
+    const chunkSize = 3000; // Adjust based on your requirements
+    var numChunks = (packets.length / chunkSize).ceil();
+
+    List<Future<List<Packet>>> futures = [];
+    for (var i = 0; i < numChunks; i++) {
+      var start = i * chunkSize;
+      // var end = start + chunkSize;
+      var end = min(start + chunkSize,
+          packets.length); // Ensure end doesn't exceed the list size
+      futures.add(Future(
+          () => filterPacketsChunk(packets.sublist(start, end), filter)));
+    }
+
+    return Future.wait(futures).then((List<List<Packet>> results) {
+      return results.expand((packets) => packets).toList();
+    });
+  }
+
+  void _doFilter() async {
+    final String filter = _filterController.text;
+    // 恢复原状
+    if (filter.trim().isEmpty) {
+      isFiltering = false;
+      print("empty filter");
+      packets.addAll(_bakcupPackets);
+      _bakcupPackets.clear();
+      setState(() {});
+    } else {
+      // 开始执行筛选
+      isFiltering = true;
+      _bakcupPackets.addAll(packets);
+      packets = await parallelFilter(filter);
+      setState(() {});
+    }
+  }
 
 // 当离开该屏幕或销毁widget时
   @override
