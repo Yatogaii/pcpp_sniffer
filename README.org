@@ -73,4 +73,20 @@
 
 
 * 进度
-+ 20231015: 做好了基础结构，通信 socket 和 DataPack 也封装了一下，明天开始着手写 onPacketArrives 这个函数，这个才是重点，需要确定 *数据报协议栈* 和传输格式问题。
++ 20231015:
+  + 做好了基础结构，通信 socket 和 DataPack 也封装了一下
+  + 明天开始着手写 onPacketArrives 这个函数，这个才是重点，需要确定 *数据报协议栈* 和传输格式问题。
++ 20231016:
+  + sniffer 用各层的 LayerInfo 拼接成一个 json 数组发送给前端， onPacketArrives 和 formatLayerInfos 已经完成了。
+  + flutter 前端结构基本确定了，和 sniffer 通过 socket 通信。
++ 20231017:
+  + 用 LayerInfo 传递包数据不达可靠，前端没得展示，现在换成一个 Packet 提取一系列关键信息，其他的都放到 details 里让前端解决，用 formatPacketInfos 替换了 formatLayerInfos 。
+  + dart4web 不支持 dart:io 用不了 socket, 只能用 websocket 来写
+  + 用 vcpkg 装 uwebsockets 全是依赖问题，微软出品确实不可靠。
++ 20231018:
+  + 换成 conan 十分钟解决了依赖问题，sniffer 成功换成了 websocket 通信。
+  + flutter 三个界面也基本设置完了，但是性能很差，一开始抓包界面根本动不了。
+  + 用 ListView.build 替换了 TableView 提高了性能，但是不好看了。
++ 20231019:
+  + 完成了 sniffer 和前端之间的通信，通信数据格式什么的基本都确定了，数据传输也正常，前端性能也看的过去。
+  + 现在还需要完成：筛选功能、包原始数据的 hex 和文本对照（可选）、TCP 流（可选）。
