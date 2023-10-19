@@ -70,7 +70,12 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
   final TextEditingController _filterController = TextEditingController();
   String? _selectedPacketDetails;
   StreamSubscription? _streamSubscription;
+  // 判断是否正在过滤，辅助处理新来的数据报
   bool isFiltering = false;
+  // 判断是否已经开始 sniff ，辅助按钮操作。
+  bool isSniffing = false;
+
+  String buttonSnifferText = '开始抓包';
 
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,7 +106,7 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
                 const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _startSniffer,
-                  child: Text('开始抓包'),
+                  child: Text(buttonSnifferText),
                 ),
               ],
             ),
@@ -160,36 +165,48 @@ class _PacketDisplayScreenState extends State<PacketDisplayScreen> {
   }
 
   void _startSniffer() {
-    print("start sniff");
-    widget.channel.sink.add("START_SNIFF");
-    // widget.channel.sink.add("GET_DEVICES");
+    // 如果没有抓包
+    if (!isSniffing) {
+      isSniffing = true;
+      buttonSnifferText = '停止抓包';
+      print("start sniff");
+      widget.channel.sink.add("START_SNIFF");
+      // widget.channel.sink.add("GET_DEVICES");
 
-    // 注册消息处理函数
-    _streamSubscription = widget.streamController.stream.listen((data) {
-      Map<String, dynamic> packetObj = jsonDecode(data);
-      // 判断是否转化成功
-      //if (packetObj["success"]) {
-      _tempPackets.add(Packet(
-          packetObj["time"],
-          packetObj["srcIp"],
-          packetObj["srcPort"],
-          packetObj["dstIp"],
-          packetObj["dstPort"],
-          packetObj["protocol"],
-          packetObj["length"],
-          packetObj["details"]));
-      if (_tempPackets.length >= 30) {
-        // 如果正在筛选，不加入packets, 不 setState
-        if (isFiltering) {
-          _bakcupPackets.addAll(_tempPackets);
-          _tempPackets.clear();
-        } else {
-          packets.addAll(_tempPackets);
-          _tempPackets.clear();
-          setState(() {});
+      // 注册消息处理函数
+      _streamSubscription = widget.streamController.stream.listen((data) {
+        Map<String, dynamic> packetObj = jsonDecode(data);
+        // 判断是否转化成功
+        //if (packetObj["success"]) {
+        _tempPackets.add(Packet(
+            packetObj["time"],
+            packetObj["srcIp"],
+            packetObj["srcPort"],
+            packetObj["dstIp"],
+            packetObj["dstPort"],
+            packetObj["protocol"],
+            packetObj["length"],
+            packetObj["details"]));
+        if (_tempPackets.length >= 0) {
+          // 如果正在筛选，不加入packets, 不 setState
+          if (isFiltering) {
+            _bakcupPackets.addAll(_tempPackets);
+            _tempPackets.clear();
+          } else {
+            packets.addAll(_tempPackets);
+            _tempPackets.clear();
+            setState(() {});
+          }
         }
-      }
-    });
+      });
+      // 如果正在抓包
+    } else {
+      isSniffing = false;
+      buttonSnifferText = '开始抓包';
+      _streamSubscription?.cancel();
+      setState(() {
+      });
+    }
   }
 
   // For  filter function
