@@ -237,8 +237,7 @@ PacketInfo extractPacketInfo(pcpp::RawPacket *rawPacket,
     }
 
     // Protocol
-    info.protocol =
-        getProtocolName(parsedPacket.getFirstLayer()->getProtocol());
+    info.protocol = getProtocolName(parsedPacket.getLastLayer()->getProtocol());
 
     // Length
     info.length = rawPacket->getRawDataLen();
