@@ -21,21 +21,33 @@ bool isCapture = false;
 /// payload什么的也都存放在这里
 /// 该函数主要处理数据报格式到方便 socket 发送的格式。
 /// TODO 格式还需要确定
-
 std::string formatLayerInfos(const std::vector<LayerInfo> &layerInfos) {
-    nlohmann::json jsonArray;
+    nlohmann::json jsonarray;
 
     for (const auto &info : layerInfos) {
-        nlohmann::json jsonObject;
-        jsonObject["protocolName"] = info.protocolName;
+        nlohmann::json jsonobject;
+        jsonobject["protocolname"] = info.protocolName;
         for (const auto &[key, value] : info.fields) {
-            jsonObject["fields"][key] = value;
+            jsonobject["fields"][key] = value;
         }
-        jsonObject["details"] = "details";
-        jsonArray.push_back(jsonObject);
+        jsonarray.push_back(jsonobject);
     }
 
-    return jsonArray.dump(); // 把jsonArray 转化为 string
+    return jsonarray.dump(); // 把jsonarray 转化为 string
+}
+
+std::string formatPacketInfo(const PacketInfo &info) {
+    nlohmann::json jsonobj;
+    jsonobj["time"] = info.timestamp;
+    jsonobj["srcIp"] = info.srcIp;
+    jsonobj["srcPort"] = std::to_string(info.srcPort);
+    jsonobj["dstIp"] = info.dstIp;
+    jsonobj["dstPort"] = std::to_string(info.dstPort);
+    jsonobj["protocol"] = info.protocol;
+    jsonobj["length"] = std::to_string(info.length);
+    jsonobj["details"] = info.details;
+
+    return jsonobj.dump();
 }
 
 /// 数据包处理示例函数
@@ -85,13 +97,20 @@ void onPacketArrives(pcpp::RawPacket *packet, pcpp::PcapLiveDevice *dev,
     // Step2: 处理所有协议，每个协议都读取相关的信息
     // TODO 尚未实现，这一步到底需要存放哪些信息不好确定
     // printPacketInfo(parsedPacket);
-    std::vector<LayerInfo> packetLayerInfos;
-    parseLayer(parsedPacket.getFirstLayer(), packet, packetLayerInfos);
+    // 1018 不再按照layer 来解析了
+    // std::vector<LayerInfo> packetLayerInfos;
+    // parseLayer(parsedPacket.getFirstLayer(), packet, packetLayerInfos);
+    PacketInfo infos = extractPacketInfo(packet, parsedPacket);
 
     // Step3: 把处理到的数据包发给前端进行解析
     // 需要确定数据包拼接的形式
-    std::string serialLayerInfos = formatLayerInfos(packetLayerInfos);
-    std::cout << serialLayerInfos;
+    // std::string serialLayerInfos = formatLayerInfos(packetLayerInfos);
+    std::string serialLayerInfos;
+
+    // 解析packetinfo
+    serialLayerInfos = formatPacketInfo(infos);
+
+    // std::cout << serialLayerInfos;
     syncQueue.push(serialLayerInfos);
 }
 
@@ -251,6 +270,9 @@ int main() {
                          std::cout << "get device";
                          ws->send(devDatas.c_str(), opCode);
                      } else if (message == "START_SNIFF") {
+                         if (isCapture) {
+                             return;
+                         }
                          // Handle other types of messages here
                          std::cout << "start sniff recived";
                          // dev = pcpp::PcapLiveDeviceList::getInstance()
@@ -259,12 +281,23 @@ int main() {
                          // TODO 这里需要加错误处理
                          dev->startCapture(onPacketArrives, nullptr);
                          isCapture = true;
+                         std::thread([=]() {
+                             while (isCapture) {
+                                 ws->send(syncQueue.pop().c_str(), opCode);
+                                 std::cout << "send" << std::endl;
+                             }
+                         }).detach();
+
                          while (true) {
                              ws->send(syncQueue.pop().c_str(), opCode);
                          }
                          // 这里开始通过同步队列不断的向客户端发送消息
                      } else if (message == "STOP_SNIFF") {
+                         if (!isCapture) {
+                             return;
+                         }
                          isCapture = false;
+                         dev->stopCapture();
                          // 认为是接受到的网卡名称
                      } else {
                          std::string name = {message.begin(), message.end()};

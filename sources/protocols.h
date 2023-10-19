@@ -25,8 +25,20 @@ struct LayerInfo {
     unsigned char *payload;
 };
 
-std::vector<pcpp::ProtocolType> getProtocolStack(const pcpp::Packet &packet);
-void parseLayer(pcpp::Layer *layer, pcpp::RawPacket *packet,
-                std::vector<LayerInfo> &layersInfo);
+struct PacketInfo {
+    std::string timestamp;
+    std::string srcIp;
+    std::string dstIp;
+    int srcPort;
+    int dstPort;
+    std::string protocol;
+    int length;
+    std::string details;
+};
 
+std::vector<pcpp::ProtocolType> getProtocolStack(const pcpp::Packet &packet);
+// void parseLayer(pcpp::Layer *layer, pcpp::RawPacket *packet,
+//                 std::vector<LayerInfo> &layersInfo);
+PacketInfo extractPacketInfo(pcpp::RawPacket *rawPacket,
+                             const pcpp::Packet &packet);
 #endif
