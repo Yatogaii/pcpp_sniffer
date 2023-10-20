@@ -1,0 +1,68 @@
+* 使用说明
+1. 先启动后端 ~./SnifferCLI~ ，启动之后会在本地监听28080端口。
+2. 开前端，主界面是欢迎界面，点击开始抓包会进入网卡选择界面。
+3. 如下图所示，进入网卡选择界面后会让先连接，（这里输入的127.0.0.1:28080
+   是因为后端运行在 x86 服务器上，通过 ssh 把端口映射到了本地的28080端口）
+   #+BEGIN_IMAGE
+   [[file:Lab1-doc/20231020_124848.png]]
+   #+END_IMAGE
+   输入 URL 后点击连接就会获得后端返回的网卡列表。
+   #+BEGIN_IMAGE
+[[file:Lab1-doc/20231020_125122.png]]
+   #+END_IMAGE
+4. 选择一个网卡，这里选择数据量最大的 eth0 ，然后点击 confirm ，进入下一个数据包显示界面。
+   #+BEGIN_IMAGE
+   [[file:Lab1-doc/20231020_130221.png]]
+   #+END_IMAGE
+5. 点击开始抓包，稍等片刻后就会显示抓到的数据包，可以随时点击停止抓包。
+   #+BEGIN_IMAGE
+   [[file:Lab1-doc/20231020_130349.png]]
+   #+END_IMAGE
+6. 如上图所示，点击抓包列表内的数据报后，下面会显示这个数据包的详细信息（没有 wireshark 那种和文本的对比界面）。
+7. 可以对数据包进行筛选，输入框内输入筛选语句点击按钮即可，支持语法如下：
+   1. port= , ip= , protocol=
+   2. and 语法，如 port=111 and ip=x.x.x.x
+   [[file:Lab1-doc/20231020_131059.png]]
+8. 筛选列表清空后再点击筛选可以看到原始数据。
+
+
+* 功能说明
+实现了以下功能：
+1. 基本的抓包器功能
+2. 前后端分离，且前端跨平台 (Web, iOS, Android, Windows, MacOS),
+   前后端通过 WebSocket 通信，数据格式为 json。
+3. 有选择网卡的功能，可以选择网卡来抓包。
+4. 有筛选功能，支持根据 IP Port Protocol 来筛选，并且支持 and 语句。
+5. wireshark-like 的三段式结构。
+6. 支持多种协议，比如 DNS ARP HTTP TCP UDP 等。
+7. 可以查看每个数据包的详细信息和具体内容。
+
+
+* 项目结构及实现
+** 前端 :: sniffer_web_ui
+分为三个界面，欢迎界面、网卡选择界面和数据包展示界面，通过 flutter web 实现，
+可以生成其他平台的可执行程序（需要额外配置），通过 WebSocket 实现和后端通信。
+
+前端中的性能要求较高，开始抓包后数据包显示界面需要处理大量的数据并展示，并且由于 flutter web 不支持 dart::io ，也用不了多线程库，主要通过以下两点解决性能问题。
+1. 使用 ListView.builder 代替 TableView ，ListView.builder 有 lazy-load 的特性，数据包名义上是加载到了前端上，但是只要用户没有滑到那一部分，就不加载。
+2. 分批次执行 setState 来更新 UI 状态，数据包数量太大，每一个数据包都执行一次 setState 会导致整个前端卡死。
+
+** 后端 :: snifferCLI
+主要通过 pcapplusplus 和 uwebsockets 来实现， uwebsockets 来实现 WebSocket 通信，而 pcpp 则是 libpcap 的 C++ 封装，比原始的 libpcap 方便很多。
+
+*** 网卡选择实现
+通过 pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDevicesList() 来获取网卡列表，之后再针对每个网卡获取名称和 ip 信息，拼接后发给前端，前端选择后再发给抓包器，抓包器在 uWebSockets 提供的 onMessage 方法中实现对应网卡的初始化。
+
+*** 通信实现
+通信借助 uWebSockets 来在 C++ 上实现 WSserver ， flutter 处可以直接使用原生的 WebSocketChannel 来做 WebSocket 通信。
+
+本来是用纯 socket 做的，C++ 那里都封装好了，但是 flutter web 用不了 dart::io ，也就用不了 socket ，只能换成 WebSocket 来做。
+
+*** 抓包实现
+抓包在选择设备后直接使用 pcpp 提供的 ~dev->startCapture(onPacketArrives, nullptr>~ 实现，并且不阻塞主线程。
+
+*** 数据提取
+根据前端列表所展示的数据为主来展示数据， protocol 为最顶层协议的 protocol ，其余信息都放在了 details 字段里，在前段也可以点击查看。
+
+* Github
+https://github.com/Yatogaii/pcpp_sniffer/tree/main
